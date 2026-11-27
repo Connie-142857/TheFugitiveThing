@@ -1,6 +1,9 @@
 import React from 'react';
 import { Navbar, PageId } from './Navbar';
 import { usePWA } from '../../hooks/usePWA';
+import { useAuth } from '../../context/AuthContext';
+import { resolveCosmeticVisuals } from '../../utils/cosmeticStyles';
+import { CosmeticEffectsOverlay } from '../ui/CosmeticEffectsOverlay';
 import { WifiOff, Download } from 'lucide-react';
 import { GameMode } from '../../types/game';
 
@@ -20,9 +23,12 @@ export const AppShell: React.FC<AppShellProps> = ({
   children,
 }) => {
   const { isOnline, isInstallable, installApp } = usePWA();
+  const { profile } = useAuth();
+  const appVisuals = resolveCosmeticVisuals(profile?.equippedCosmetics, profile?.avatarId);
 
   return (
-    <div className="min-h-screen flex flex-col bg-parchment-200 text-ink pb-20 md:pb-0">
+    <div className={`min-h-screen flex flex-col ${appVisuals.appBgClass} text-ink pb-20 md:pb-0 relative transition-colors duration-300`}>
+      <CosmeticEffectsOverlay effectId={profile?.equippedCosmetics?.effect} />
       {/* Skip to main content for keyboard & screen-reader users */}
       <a
         href="#main-content"

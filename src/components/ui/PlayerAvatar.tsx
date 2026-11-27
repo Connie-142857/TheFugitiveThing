@@ -4,10 +4,8 @@ import {
   Eye,
   Skull,
   Flame,
-  Users,
-  Feather,
-  Crosshair,
-  KeyRound,
+  Crown,
+  User,
   Sparkles,
 } from 'lucide-react';
 import { PlayerProfile } from '../../types/player';
@@ -24,8 +22,7 @@ interface PlayerAvatarProps {
   className?: string;
 }
 
-function renderAvatarEmblem(iconName: string | null, size: 'sm' | 'md' | 'lg' | 'xl') {
-  if (!iconName) return null;
+function renderSkinIcon(iconName: string, size: 'sm' | 'md' | 'lg' | 'xl') {
   const iconCls =
     size === 'sm'
       ? 'w-4 h-4'
@@ -36,24 +33,21 @@ function renderAvatarEmblem(iconName: string | null, size: 'sm' | 'md' | 'lg' | 
       : 'w-9 h-9';
 
   switch (iconName) {
-    case 'Eye':
-      return <Eye className={iconCls} />;
-    case 'Shield':
-      return <Shield className={iconCls} />;
-    case 'Skull':
-      return <Skull className={iconCls} />;
     case 'Flame':
       return <Flame className={iconCls} />;
-    case 'Users':
-      return <Users className={iconCls} />;
-    case 'Feather':
-      return <Feather className={iconCls} />;
-    case 'Crosshair':
-      return <Crosshair className={iconCls} />;
-    case 'KeyRound':
-      return <KeyRound className={iconCls} />;
+    case 'Eye':
+      return <Eye className={iconCls} />;
+    case 'Crown':
+      return <Crown className={iconCls} />;
+    case 'Sparkles':
+      return <Sparkles className={iconCls} />;
+    case 'Skull':
+      return <Skull className={iconCls} />;
+    case 'Shield':
+      return <Shield className={iconCls} />;
+    case 'User':
     default:
-      return null;
+      return <User className={iconCls} />;
   }
 }
 
@@ -74,34 +68,23 @@ export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
     xl: 'w-20 h-20 text-2xl',
   };
 
-  const initials = username
-    ? username
-        .split(' ')
-        .map((n) => n[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase()
-    : '??';
-
   const visuals = resolveCosmeticVisuals(equippedCosmetics, avatarId);
-  const emblem = renderAvatarEmblem(visuals.avatarIconName, size);
+  const skinIcon = renderSkinIcon(visuals.skinIconName, size);
 
   return (
     <div className={`relative inline-block ${className}`}>
-      {/* Framed Avatar Circle with Equipped Skin, Nameplate & Effect Aura */}
+      {/* Profile Image: Avatar controls background, Skin controls icon, Nameplate controls border */}
       <div
         className={`${sizeClasses[size]} rounded-full ${
           isFugitive
-            ? 'border-2 border-amber-600 bg-amber-950/30 text-ink'
-            : `${visuals.nameplateClass} ${visuals.skinBgClass} ${visuals.skinTextClass}`
+            ? 'border-2 border-amber-600 bg-amber-950/30 text-amber-200'
+            : `${visuals.nameplateClass} ${visuals.avatarBgClass} ${visuals.avatarTextClass}`
         } ${visuals.effectRingClass} shadow-md overflow-hidden flex items-center justify-center font-serif font-black select-none transition-all`}
       >
         {avatarUrl ? (
           <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
-        ) : emblem ? (
-          emblem
         ) : (
-          <span className="tracking-tighter">{initials}</span>
+          skinIcon
         )}
       </div>
 

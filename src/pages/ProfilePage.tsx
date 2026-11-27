@@ -103,12 +103,10 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Dossier Header Card (Applies Equipped Background, Nameplate, Skin, Avatar & Effect) */}
+      {/* Dossier Header Card (Applies Nameplate border & Title below name) */}
       <ParchmentPanel
         variant="framed"
-        className={`space-y-4 ${dossierVisuals.backgroundClass} ${
-          dossierVisuals.backgroundIsDark ? 'text-parchment-50' : ''
-        }`}
+        className={`space-y-4 ${dossierVisuals.nameplateClass}`}
       >
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
           <PlayerAvatar
@@ -122,46 +120,33 @@ export const ProfilePage: React.FC = () => {
 
           <div className="flex-1 space-y-1">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-              <span
-                className={`text-xs font-serif uppercase tracking-widest font-bold ${
-                  dossierVisuals.backgroundIsDark ? 'text-amber-300' : 'text-manuscript-burgundy'
-                }`}
-              >
+              <span className="text-xs font-serif uppercase tracking-widest text-manuscript-burgundy font-bold">
                 Hunter Dossier • Inscribed
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-900/25 text-emerald-300 border border-emerald-700/40 font-serif font-bold">
+              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-900/15 text-emerald-900 border border-emerald-800/30 font-serif font-bold">
                 Active Hunter
               </span>
             </div>
 
-            <h2
-              className={`text-2xl sm:text-3xl font-serif font-black ${
-                dossierVisuals.backgroundIsDark ? 'text-parchment-50' : 'text-ink'
-              }`}
-            >
+            <h2 className="text-2xl sm:text-3xl font-serif font-black text-ink">
               {profile.username}
             </h2>
-            <p className={`text-xs font-mono ${dossierVisuals.backgroundIsDark ? 'text-parchment-300' : 'text-ink-light'}`}>
+            <p className="text-xs font-serif font-bold uppercase tracking-wider text-manuscript-burgundy">
+              {profile.title || levelInfo.rankTitle}
+            </p>
+            <p className="text-xs font-mono text-ink-light">
               UID: {profile.uid}
             </p>
 
             {profile.bio && (
-              <p
-                className={`text-xs font-body italic pt-0.5 max-w-xl ${
-                  dossierVisuals.backgroundIsDark ? 'text-parchment-200' : 'text-ink-light'
-                }`}
-              >
+              <p className="text-xs font-body italic pt-0.5 max-w-xl text-ink-light">
                 &ldquo;{profile.bio}&rdquo;
               </p>
             )}
 
             {/* Level & XP Progression Bar */}
             <div className="pt-2 max-w-md">
-              <div
-                className={`flex justify-between text-xs font-serif mb-1 ${
-                  dossierVisuals.backgroundIsDark ? 'text-parchment-200' : 'text-ink-light'
-                }`}
-              >
+              <div className="flex justify-between text-xs font-serif mb-1 text-ink-light">
                 <span>Rank {levelInfo.level}: {profile.title || levelInfo.rankTitle}</span>
                 <span>{levelInfo.currentLevelXp} / {levelInfo.xpRequiredForNext} XP (Total: {profile.xp || 0})</span>
               </div>

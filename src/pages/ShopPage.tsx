@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { resolveCosmeticVisuals } from '../utils/cosmeticStyles';
+import { CosmeticEffectsOverlay } from '../components/ui/CosmeticEffectsOverlay';
 import {
   COSMETIC_CATALOGUE,
   purchaseCosmeticInFirestore,
@@ -445,23 +446,27 @@ export const ShopPage: React.FC = () => {
             [previewItem.category]: previewItem.id,
           };
           const pv = resolveCosmeticVisuals(previewEquipped, profile?.avatarId);
+          const previewTitle =
+            previewItem.category === 'title'
+              ? previewItem.assetPath
+              : profile?.title || 'Novice Tracker';
 
           return (
           <div className="space-y-4">
             {/* Live Preview Card */}
             <div
-              className={`p-4 rounded-lg border-2 flex items-center gap-4 transition-all ${
-                pv.backgroundClass || 'border-parchment-500 bg-parchment-200/70'
-              }`}
+              className={`relative overflow-hidden p-4 rounded-lg flex items-center gap-4 transition-all ${pv.nameplateClass} ${pv.appBgClass}`}
             >
+              <CosmeticEffectsOverlay effectId={previewEquipped.effect} contained />
               <PlayerAvatar
                 username={profile?.username || 'Hunter'}
                 avatarId={profile?.avatarId}
                 equippedCosmetics={previewEquipped}
                 size="lg"
                 level={userLevel}
+                className="relative z-10"
               />
-              <div>
+              <div className="relative z-10">
                 <span
                   className={`text-[9px] uppercase font-serif font-bold px-1.5 py-0.5 rounded border ${RARITY_STYLES[previewItem.rarity]}`}
                 >
@@ -469,17 +474,17 @@ export const ShopPage: React.FC = () => {
                 </span>
                 <h4
                   className={`font-serif font-black text-base mt-1 ${
-                    pv.backgroundIsDark ? 'text-parchment-50' : 'text-ink'
+                    pv.appBgIsDark ? 'text-parchment-50' : 'text-ink'
                   }`}
                 >
                   {profile?.username || 'Hunter'}
                 </h4>
                 <p
                   className={`text-xs font-serif font-semibold ${
-                    pv.backgroundIsDark ? 'text-amber-300' : 'text-manuscript-burgundy'
+                    pv.appBgIsDark ? 'text-amber-300' : 'text-manuscript-burgundy'
                   }`}
                 >
-                  {previewItem.category === 'title' ? previewItem.assetPath : previewItem.name}
+                  {previewTitle}
                 </p>
               </div>
             </div>
