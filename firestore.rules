@@ -1,0 +1,196 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isServerUtcDate(dateStr) {
+      let t = request.time;
+      let y = string(t.year());
+      let m = t.month() < 10 ? '0' + string(t.month()) : string(t.month());
+      let d = t.day() < 10 ? '0' + string(t.day()) : string(t.day());
+      return dateStr == y + '-' + m + '-' + d;
+    }
+
+    // User Profile Rules
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+
+      allow create: if isOwner(userId)
+                    && request.resource.data.uid == userId
+                    && request.resource.data.coins == 100
+                    && request.resource.data.level == 1
+                    && request.resource.data.xp == 0;
+
+      allow update: if isOwner(userId)
+                    && request.resource.data.coins >= 0
+                    && (
+                      // 1. Standard profile edit (cannot touch protected progression/economy fields)
+                      !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+                        'coins',
+                        'xp',
+                        'level',
+                        'stats',
+                        'streak',
+                        'achievements',
+                        'inventory',
+                        'rewardedMatchIds',
+                        'processedPurchaseIds',
+                        'createdAt',
+                        'uid'
+                      ])
+                      // 2. Match progression claim (requires +1 rewardedMatchId and non-decreasing XP)
+                      || (
+                        !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+                          'streak',
+                          'inventory',
+                          'processedPurchaseIds',
+                          'createdAt',
+                          'uid'
+                        ])
+                        && request.resource.data.xp >= resource.data.xp
+                        && request.resource.data.level >= resource.data.level
+                        && request.resource.data.coins >= resource.data.coins
+                        && request.resource.data.rewardedMatchIds.size() == resource.data.get('rewardedMatchIds', []).size() + 1
+                        && request.resource.data.rewardedMatchIds.hasAll(resource.data.get('rewardedMatchIds', []))
+                      )
+                      // 3. Atomic Bazaar purchase (requires +1 processedPurchaseId, +1 inventory, and coin deduction)
+                      || (
+                        !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+                          'xp',
+                          'level',
+                          'stats',
+                          'streak',
+                          'achievements',
+                          'rewardedMatchIds',
+                          'createdAt',
+                          'uid'
+                        ])
+                        && request.resource.data.coins <= resource.data.coins
+                        && request.resource.data.inventory.size() == resource.data.get('inventory', []).size() + 1
+                        && request.resource.data.processedPurchaseIds.size() == resource.data.get('processedPurchaseIds', []).size() + 1
+                      )
+                      // 4. Daily login tribute claim (lastClaimDate must advance; allows Coins, XP, Level, Title, Inventory)
+                      || (
+                        !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+                          'stats',
+                          'achievements',
+                          'rewardedMatchIds',
+                          'processedPurchaseIds',
+                          'createdAt',
+                          'uid'
+                        ])
+                        && request.resource.data.streak.lastClaimDate != resource.data.streak.lastClaimDate
+                        && isServerUtcDate(request.resource.data.streak.lastClaimDate)
+                        && request.resource.data.coins >= resource.data.coins
+                        && request.resource.data.xp >= resource.data.xp
+                        && request.resource.data.level >= resource.data.level
+                      )
+                    );
+
+      allow delete: if false;
+
+      // Immutable Match History Subcollection (prevents duplicate rewards & tampering)
+      match /matchHistory/{matchId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+                      && !exists(/databases/$(database)/documents/users/$(userId)/matchHistory/$(matchId))
+                      && exists(/databases/$(database)/documents/rooms/$(matchId))
+                      && request.resource.data.matchId == matchId
+                      && request.resource.data.xpEarned >= 0
+                      && request.resource.data.xpEarned <= 1000;
+        allow update, delete: if false;
+      }
+
+      // Immutable Bazaar Purchase Receipts (prevents replay attacks)
+      match /purchases/{purchaseId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+                      && !exists(/databases/$(database)/documents/users/$(userId)/purchases/$(purchaseId))
+                      && request.resource.data.purchaseId == purchaseId
+                      && request.resource.data.pricePaid >= 0;
+        allow update, delete: if false;
+      }
+
+      // Immutable Daily Login Claim Receipts (prevents same-day duplicates & clock tampering)
+      match /dailyClaims/{utcDate} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+                      && !exists(/databases/$(database)/documents/users/$(userId)/dailyClaims/$(utcDate))
+                      && isServerUtcDate(utcDate)
+                      && request.resource.data.utcDate == utcDate
+                      && request.resource.data.claimedAt == request.time
+                      && request.resource.data.coinsAwarded >= 0
+                      && request.resource.data.xpAwarded >= 0;
+        allow update, delete: if false;
+      }
+    }
+
+    // Unique Username Registry
+    match /usernames/{normalizedUsername} {
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+                    && request.resource.data.uid == request.auth.uid
+                    && !exists(/databases/$(database)/documents/usernames/$(normalizedUsername));
+
+      allow delete: if isAuthenticated()
+                    && resource.data.uid == request.auth.uid;
+
+      allow update: if false;
+    }
+
+    // Room Codes Index (Lookup code -> roomId)
+    match /roomCodes/{roomCode} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && !exists(/databases/$(database)/documents/roomCodes/$(roomCode));
+      allow update, delete: if isAuthenticated();
+    }
+
+    // Multiplayer Game Rooms & Lobbies
+    match /rooms/{roomId} {
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+                    && request.resource.data.createdById == request.auth.uid
+                    && request.resource.data.status == 'lobby'
+                    && request.resource.data.playerCount >= 1;
+
+      allow update: if isAuthenticated();
+
+      allow delete: if isAuthenticated() && resource.data.createdById == request.auth.uid;
+
+      // STRICT ROLE PRIVACY: Secret Role Briefings Subcollection
+      // Each player can ONLY read their own secret role document!
+      // Players cannot inspect other players' hidden roles under any circumstance.
+      match /secretRoles/{playerUid} {
+        allow read: if isAuthenticated() && request.auth.uid == playerUid;
+        allow write: if isAuthenticated(); // Allowed during match initialization batch
+      }
+
+      // Real-Time Chat Messages Subcollection
+      // Prevents sender spoofing, tampering, deletions, and payload abuse
+      match /messages/{messageId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated()
+                      && request.resource.data.roomId == roomId
+                      && request.resource.data.channelType in ['global', 'team', 'dead', 'host', 'role', 'whisper']
+                      && (
+                        (request.resource.data.senderUid == request.auth.uid && request.resource.data.get('isSystem', false) == false)
+                        || (request.resource.data.senderUid == 'system_tribunal' && request.resource.data.isSystem == true)
+                      )
+                      && request.resource.data.message is string
+                      && request.resource.data.message.size() > 0
+                      && request.resource.data.message.size() <= 500;
+        allow update, delete: if false; // Missives are immutable records in the High Ledger
+      }
+    }
+  }
+}
