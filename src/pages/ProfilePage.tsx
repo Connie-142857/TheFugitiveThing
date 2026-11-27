@@ -11,6 +11,7 @@ import {
   fetchPlayerMatchHistory,
 } from '../services/progressionService';
 import { getCosmeticById } from '../services/shopService';
+import { resolveCosmeticVisuals } from '../utils/cosmeticStyles';
 import { MatchHistoryRecord } from '../types/player';
 import { ROLES } from '../types/rules';
 import {
@@ -89,6 +90,7 @@ export const ProfilePage: React.FC = () => {
   const levelInfo = getLevelProgress(profile.xp || 0);
   const xpProgressPercent = levelInfo.progressPercent;
   const playtimeMinutes = Math.floor((profile.stats?.totalPlaytimeMs || 0) / 60000);
+  const dossierVisuals = resolveCosmeticVisuals(profile.equippedCosmetics, profile.avatarId);
 
   const unlockedMap = new Map<string, number>();
   for (const a of profile.achievements || []) {
@@ -101,11 +103,18 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Dossier Header Card */}
-      <ParchmentPanel variant="framed" className="space-y-4">
+      {/* Dossier Header Card (Applies Equipped Background, Nameplate, Skin, Avatar & Effect) */}
+      <ParchmentPanel
+        variant="framed"
+        className={`space-y-4 ${dossierVisuals.backgroundClass} ${
+          dossierVisuals.backgroundIsDark ? 'text-parchment-50' : ''
+        }`}
+      >
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
           <PlayerAvatar
             username={profile.username}
+            avatarId={profile.avatarId}
+            equippedCosmetics={profile.equippedCosmetics}
             size="xl"
             level={profile.level}
             className="flex-shrink-0"
@@ -113,28 +122,46 @@ export const ProfilePage: React.FC = () => {
 
           <div className="flex-1 space-y-1">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-              <span className="text-xs font-serif uppercase tracking-widest text-manuscript-burgundy font-bold">
+              <span
+                className={`text-xs font-serif uppercase tracking-widest font-bold ${
+                  dossierVisuals.backgroundIsDark ? 'text-amber-300' : 'text-manuscript-burgundy'
+                }`}
+              >
                 Hunter Dossier • Inscribed
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-900/15 text-emerald-900 border border-emerald-800/30 font-serif font-bold">
+              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-900/25 text-emerald-300 border border-emerald-700/40 font-serif font-bold">
                 Active Hunter
               </span>
             </div>
 
-            <h2 className="text-2xl sm:text-3xl font-serif font-black text-ink">
+            <h2
+              className={`text-2xl sm:text-3xl font-serif font-black ${
+                dossierVisuals.backgroundIsDark ? 'text-parchment-50' : 'text-ink'
+              }`}
+            >
               {profile.username}
             </h2>
-            <p className="text-xs font-mono text-ink-light">UID: {profile.uid}</p>
+            <p className={`text-xs font-mono ${dossierVisuals.backgroundIsDark ? 'text-parchment-300' : 'text-ink-light'}`}>
+              UID: {profile.uid}
+            </p>
 
             {profile.bio && (
-              <p className="text-xs font-body italic text-ink-light pt-0.5 max-w-xl">
-                "{profile.bio}"
+              <p
+                className={`text-xs font-body italic pt-0.5 max-w-xl ${
+                  dossierVisuals.backgroundIsDark ? 'text-parchment-200' : 'text-ink-light'
+                }`}
+              >
+                &ldquo;{profile.bio}&rdquo;
               </p>
             )}
 
             {/* Level & XP Progression Bar */}
             <div className="pt-2 max-w-md">
-              <div className="flex justify-between text-xs font-serif text-ink-light mb-1">
+              <div
+                className={`flex justify-between text-xs font-serif mb-1 ${
+                  dossierVisuals.backgroundIsDark ? 'text-parchment-200' : 'text-ink-light'
+                }`}
+              >
                 <span>Rank {levelInfo.level}: {profile.title || levelInfo.rankTitle}</span>
                 <span>{levelInfo.currentLevelXp} / {levelInfo.xpRequiredForNext} XP (Total: {profile.xp || 0})</span>
               </div>

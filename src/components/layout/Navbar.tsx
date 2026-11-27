@@ -101,6 +101,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <PlayerAvatar
                   username={profile.username}
+                  avatarId={profile.avatarId}
+                  equippedCosmetics={profile.equippedCosmetics}
                   size="sm"
                   level={profile.level}
                 />

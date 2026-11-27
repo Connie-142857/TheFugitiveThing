@@ -7,6 +7,7 @@ import { PlayerAvatar } from '../components/ui/PlayerAvatar';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
+import { resolveCosmeticVisuals } from '../utils/cosmeticStyles';
 import {
   COSMETIC_CATALOGUE,
   purchaseCosmeticInFirestore,
@@ -438,12 +439,25 @@ export const ShopPage: React.FC = () => {
         onClose={() => setPreviewItem(null)}
         title={previewItem ? `Cosmetic Inspection: ${previewItem.name}` : ''}
       >
-        {previewItem && (
+        {previewItem && (() => {
+          const previewEquipped = {
+            ...equippedMap,
+            [previewItem.category]: previewItem.id,
+          };
+          const pv = resolveCosmeticVisuals(previewEquipped, profile?.avatarId);
+
+          return (
           <div className="space-y-4">
             {/* Live Preview Card */}
-            <div className="p-4 rounded-lg border-2 border-parchment-500 bg-parchment-200/70 flex items-center gap-4">
+            <div
+              className={`p-4 rounded-lg border-2 flex items-center gap-4 transition-all ${
+                pv.backgroundClass || 'border-parchment-500 bg-parchment-200/70'
+              }`}
+            >
               <PlayerAvatar
                 username={profile?.username || 'Hunter'}
+                avatarId={profile?.avatarId}
+                equippedCosmetics={previewEquipped}
                 size="lg"
                 level={userLevel}
               />
@@ -453,10 +467,18 @@ export const ShopPage: React.FC = () => {
                 >
                   {previewItem.rarity} • {previewItem.category}
                 </span>
-                <h4 className="font-serif font-black text-base text-ink mt-1">
+                <h4
+                  className={`font-serif font-black text-base mt-1 ${
+                    pv.backgroundIsDark ? 'text-parchment-50' : 'text-ink'
+                  }`}
+                >
                   {profile?.username || 'Hunter'}
                 </h4>
-                <p className="text-xs font-serif text-manuscript-burgundy">
+                <p
+                  className={`text-xs font-serif font-semibold ${
+                    pv.backgroundIsDark ? 'text-amber-300' : 'text-manuscript-burgundy'
+                  }`}
+                >
                   {previewItem.category === 'title' ? previewItem.assetPath : previewItem.name}
                 </p>
               </div>
@@ -516,7 +538,8 @@ export const ShopPage: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
+          );
+        })()}
       </ManuscriptModal>
     </div>
   );
