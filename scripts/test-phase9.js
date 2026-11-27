@@ -181,6 +181,12 @@ const unequippedProfile = unequipCosmeticPure(equippedProfile, 'avatar');
 assert(unequippedProfile.equippedCosmetics.avatar === undefined, 'Unequipped avatar category');
 assert(unequippedProfile.avatarId === 'avatar_inquisitor', 'Restored default avatarId on unequip');
 
+// Unequipping a cosmetic title at Level 5 restores earned rank title ('Citadel Investigator')
+const lvl5TitleProfile = { ...profile, level: 5, title: 'Vigilant Sentinel', equippedCosmetics: { ...profile.equippedCosmetics, title: 'title_watchman' } };
+const unequippedTitleProfile = unequipCosmeticPure(lvl5TitleProfile, 'title');
+assert(unequippedTitleProfile.equippedCosmetics.title === undefined, 'Unequipped title category');
+assert(unequippedTitleProfile.title === 'Citadel Investigator', 'Restored earned Level 5 rank title on unequip');
+
 console.log(`\n========================================`);
 console.log(`TEST RESULTS: ${passed} PASSED, ${failed} FAILED`);
 console.log(`========================================`);

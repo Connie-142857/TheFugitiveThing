@@ -6,6 +6,7 @@ import { ManuscriptModal } from '../components/ui/Modal';
 import { PlayerAvatar } from '../components/ui/PlayerAvatar';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useSettings } from '../context/SettingsContext';
 import {
   COSMETIC_CATALOGUE,
   purchaseCosmeticInFirestore,
@@ -42,6 +43,7 @@ const RARITY_RANK: Record<CosmeticItem['rarity'], number> = {
 export const ShopPage: React.FC = () => {
   const { user, profile, openAuthModal } = useAuth();
   const { showToast } = useToast();
+  const { playSound } = useSettings();
 
   const [viewMode, setViewMode] = useState<'shop' | 'inventory'>('shop');
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -104,6 +106,7 @@ export const ShopPage: React.FC = () => {
     setIsProcessing(true);
     try {
       const res = await purchaseCosmeticInFirestore(user.uid, item.id, item.priceCoins);
+      playSound('reward');
       showToast(
         `Acquired "${res.item.name}" for ${res.item.priceCoins} Silver Coins! Remaining balance: ${res.newBalance} Coins.`,
         'success',
@@ -208,10 +211,11 @@ export const ShopPage: React.FC = () => {
             {featuredItems.map((item) => {
               const owned = ownedSet.has(item.id);
               return (
-                <div
+                <button
+                  type="button"
                   key={item.id}
                   onClick={() => setPreviewItem(item)}
-                  className="p-3 rounded bg-parchment-50 border border-manuscript-gold/50 cursor-pointer hover:shadow-md transition-all flex flex-col justify-between gap-2"
+                  className="text-left p-3 rounded bg-parchment-50 border border-manuscript-gold/50 cursor-pointer hover:shadow-md transition-all flex flex-col justify-between gap-2"
                 >
                   <div>
                     <span
@@ -221,13 +225,13 @@ export const ShopPage: React.FC = () => {
                     </span>
                     <h4 className="font-serif font-bold text-xs text-ink mt-1.5">{item.name}</h4>
                   </div>
-                  <div className="flex items-center justify-between text-[11px] font-serif pt-1 border-t border-parchment-300">
+                  <div className="flex items-center justify-between text-[11px] font-serif pt-1 border-t border-parchment-300 w-full">
                     <span className="font-bold text-amber-900">
                       {owned ? 'Owned' : `${item.priceCoins} Coins`}
                     </span>
                     <span className="text-manuscript-burgundy underline">Preview</span>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -310,6 +314,10 @@ export const ShopPage: React.FC = () => {
             const owned = ownedSet.has(item.id);
             const equipped = isEquipped(item);
             const levelLocked = !!(item.minLevel && userLevel < item.minLevel);
+            const achLocked = !!(
+              item.requiredAchievementId &&
+              !profile?.achievements?.some((a) => a.id === item.requiredAchievementId && !!a.unlockedAt)
+            );
             const canAfford = userCoins >= item.priceCoins;
 
             return (
@@ -402,13 +410,15 @@ export const ShopPage: React.FC = () => {
                       <Button
                         variant="wax"
                         size="sm"
-                        disabled={!user || levelLocked || !canAfford || isProcessing}
+                        disabled={!user || levelLocked || achLocked || !canAfford || isProcessing}
                         onClick={() => setPreviewItem(item)}
                       >
                         {!user
                           ? 'Sign In'
                           : levelLocked
                           ? `Lvl ${item.minLevel}`
+                          : achLocked
+                          ? 'Locked'
                           : !canAfford
                           ? 'Low Coin'
                           : 'Acquire'}

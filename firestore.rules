@@ -75,7 +75,9 @@ service cloud.firestore {
                         ])
                         && request.resource.data.coins <= resource.data.coins
                         && request.resource.data.inventory.size() == resource.data.get('inventory', []).size() + 1
+                        && request.resource.data.inventory.hasAll(resource.data.get('inventory', []))
                         && request.resource.data.processedPurchaseIds.size() == resource.data.get('processedPurchaseIds', []).size() + 1
+                        && request.resource.data.processedPurchaseIds.hasAll(resource.data.get('processedPurchaseIds', []))
                       )
                       // 4. Daily login tribute claim (lastClaimDate must advance; allows Coins, XP, Level, Title, Inventory)
                       || (
@@ -115,6 +117,7 @@ service cloud.firestore {
         allow create: if isOwner(userId)
                       && !exists(/databases/$(database)/documents/users/$(userId)/purchases/$(purchaseId))
                       && request.resource.data.purchaseId == purchaseId
+                      && request.resource.data.itemId is string
                       && request.resource.data.pricePaid >= 0;
         allow update, delete: if false;
       }

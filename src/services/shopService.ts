@@ -440,7 +440,21 @@ export function unequipCosmeticPure(
   };
 
   if (category === 'title') {
-    updated.title = 'Novice Tracker';
+    const lvl = profile.level || 1;
+    const rankTitles = [
+      { minLevel: 1, title: 'Novice Tracker' },
+      { minLevel: 3, title: 'Sworn Watchman' },
+      { minLevel: 5, title: 'Citadel Investigator' },
+      { minLevel: 8, title: 'High Inquisitor' },
+      { minLevel: 12, title: 'Shadow Marshal' },
+      { minLevel: 16, title: 'Grand Arbiter' },
+      { minLevel: 20, title: 'Legend of the Realm' },
+    ];
+    let earnedTitle = rankTitles[0].title;
+    for (const entry of rankTitles) {
+      if (lvl >= entry.minLevel) earnedTitle = entry.title;
+    }
+    updated.title = earnedTitle;
   }
   if (category === 'avatar') {
     updated.avatarId = 'avatar_inquisitor';
